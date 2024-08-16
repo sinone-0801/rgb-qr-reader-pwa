@@ -6,7 +6,11 @@
     <title>RGB QR Code Reader PWA</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
-    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady()"></script>
+    <script src="https://docs.opencv.org/4.x/opencv.js" async onload="onOpenCvReady()"></script>
+    <script>
+        // アプリケーションのバージョン
+        const APP_VERSION = "1.0.0";
+    </script>
 </head>
 <body>
     <h2>RGB QR Code Reader</h2>
@@ -16,5 +20,12 @@
     <button id="startCamera">Start Camera</button>
     <button id="stopCamera" style="display:none;">Stop Camera</button>
     <script src="script.js"></script>
+    <footer>
+        <p>Version: <span id="version"></span></p>
+    </footer>
+    <script>
+        // バージョン情報を表示
+        document.getElementById('version').textContent = APP_VERSION;
+    </script>
 </body>
 </html>

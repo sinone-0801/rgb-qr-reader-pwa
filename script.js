@@ -1,3 +1,6 @@
+// アプリケーションのバージョンをコンソールに出力
+console.log(`RGB QR Code Reader version ${APP_VERSION}`);
+
 document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -12,15 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(str => {
                     stream = str;
                     video.srcObject = stream;
-                    video.play();
-                    startButton.style.display = 'none';
-                    stopButton.style.display = 'inline-block';
-                    resultText.textContent = 'Camera started. Scanning for QR codes...';
-                    video.addEventListener('loadedmetadata', () => {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        processFrame();
-                    });
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        startButton.style.display = 'none';
+                        stopButton.style.display = 'inline-block';
+                        resultText.textContent = 'Camera started. Scanning for QR codes...';
+                        // ビデオの準備ができたら processFrame を呼び出す
+                        video.onplay = () => {
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            processFrame();
+                        };
+                    };
                 })
                 .catch(error => {
                     console.error('Error accessing the camera:', error);
@@ -43,17 +49,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function processFrame() {
         if (video.paused || video.ended) return;
+        
+        // ビデオのサイズが有効かチェック
         if (video.videoWidth === 0 || video.videoHeight === 0) {
             requestAnimationFrame(processFrame);
             return;
         }
-        
+
+        // canvas のサイズを更新
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
         try {
-            let src = cv.imread('canvas');
+            let src = cv.imread(canvas);
             let results = readRgbQrCode(src);
             src.delete();
             
@@ -66,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error processing frame:', error);
+            resultText.textContent = "Error processing frame. Retrying...";
             requestAnimationFrame(processFrame);
         }
     }
