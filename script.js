@@ -4,6 +4,7 @@ console.log(`RGB QR Code Reader version ${APP_VERSION}`);
 document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
+    const cameraStateText = document.getElementById('camera-state');
     const resultText = document.getElementById('result');
     const startButton = document.getElementById('startCamera');
     const stopButton = document.getElementById('stopCamera');
@@ -19,8 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         video.play();
                         startButton.style.display = 'none';
                         stopButton.style.display = 'inline-block';
-                        resultText.textContent = 'Camera started. Scanning for QR codes...';
-                        // ビデオの準備ができたら processFrame を呼び出す
+                        cameraStateText.textContent = 'Camera started. Scanning for QR codes...';
+                        resultText.textContent = '';
                         video.onplay = () => {
                             canvas.width = video.videoWidth;
                             canvas.height = video.videoHeight;
@@ -30,10 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(error => {
                     console.error('Error accessing the camera:', error);
-                    resultText.textContent = `Error: ${error.message}`;
+                    cameraStateText.textContent = `Error: ${error.message}`;
                 });
         } else {
-            resultText.textContent = 'getUserMedia is not supported in this browser';
+            cameraStateText.textContent = 'getUserMedia is not supported in this browser';
         }
     }
 
@@ -43,20 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
             video.srcObject = null;
             startButton.style.display = 'inline-block';
             stopButton.style.display = 'none';
-            resultText.textContent = 'Camera stopped';
+            cameraStateText.textContent = 'Camera stopped';
+            resultText.textContent = '';
         }
     }
 
     function processFrame() {
         if (video.paused || video.ended) return;
         
-        // ビデオのサイズが有効かチェック
         if (video.videoWidth === 0 || video.videoHeight === 0) {
             requestAnimationFrame(processFrame);
             return;
         }
 
-        // canvas のサイズを更新
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
@@ -72,12 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultText.textContent = "Decoded data: " + results;
                 stopCamera(); // QRコードが検出されたらカメラを停止
             } else {
-                resultText.textContent = "Scanning for QR codes...";
+                cameraStateText.textContent = "Scanning for QR codes...";
                 requestAnimationFrame(processFrame);
             }
         } catch (error) {
             console.error('Error processing frame:', error);
-            resultText.textContent = "Error processing frame. Retrying...";
+            cameraStateText.textContent = "Error processing frame. Retrying...";
             requestAnimationFrame(processFrame);
         }
     }
