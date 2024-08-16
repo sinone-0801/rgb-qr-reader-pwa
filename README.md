@@ -10,7 +10,7 @@ This is a Progressive Web App (PWA) that reads RGB QR codes using a device's cam
 
 ## How to Use
 
-1. Open the app in a web browser
+1. Open the app in a web browser (https://sinone-0801.github.io/rgb-qr-reader-pwa/)
 2. Click "Start Camera" to begin scanning
 3. Point your camera at an RGB QR code
 4. The decoded information will be displayed on the screen
