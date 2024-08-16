@@ -64,13 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
             requestAnimationFrame(processFrame);
             return;
         }
-
+    
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-
+    
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
+    
         try {
             let src = cv.imread(canvas);
             let results = readRgbQrCode(src);
@@ -90,39 +90,30 @@ document.addEventListener('DOMContentLoaded', () => {
             requestAnimationFrame(processFrame);
         }
     }
-
+    
     function readRgbQrCode(src) {
-        let channels = new cv.MatVector();
-        cv.split(src, channels);
-        
+        let gray = new cv.Mat();
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    
         let qrCodeDetector = new cv.QRCodeDetector();
-        let decodedResults = [];
-
-        for (let i = 0; i < 3; i++) {
-            let points = new cv.Mat();
-            let result = qrCodeDetector.detect(channels.get(i), points);
-            
-            if (result) {
-                let decodedInfo = new cv.Mat();
-                let straightQrCode = new cv.Mat();
-                let data = qrCodeDetector.decode(channels.get(i), points, straightQrCode);
-                if (data) {
-                    decodedResults.push(data.replace(/\\+$/, '')); // 末尾の \\ をトリム
-                }
-                decodedInfo.delete();
-                straightQrCode.delete();
-            }
-            points.delete();
+        let decodedInfo = new cv.Mat();
+        let points = new cv.Mat();
+        
+        let result = qrCodeDetector.detectAndDecode(gray, decodedInfo, points);
+        
+        gray.delete();
+        points.delete();
+        
+        if (result) {
+            let data = decodedInfo.data[0];
+            decodedInfo.delete();
+            return data;
         }
-
-        channels.delete();
-
-        if (decodedResults.length === 3) {
-            return decodedResults.join('');
-        }
+        
+        decodedInfo.delete();
         return null;
     }
-
+    
     startButton.addEventListener('click', startCamera);
     stopButton.addEventListener('click', stopCamera);
 });
