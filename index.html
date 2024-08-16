@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGB QR Code Reader PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://docs.opencv.org/4.x/opencv.js" async></script>
+</head>
+<body>
+    <h2>RGB QR Code Reader</h2>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <p id="result">Tap 'Start Camera' to begin</p>
+    <button id="startCamera">Start Camera</button>
+    <button id="stopCamera" style="display:none;">Stop Camera</button>
+    <script src="script.js"></script>
+</body>
+</html>
