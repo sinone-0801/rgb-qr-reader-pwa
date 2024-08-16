@@ -1,6 +1,6 @@
 {
     "name": "RGB QR Code Reader",
-    "short_name": "QR Reader",
+    "short_name": "RGB QR Reader",
     "start_url": "index.html",
     "display": "standalone",
     "background_color": "#ffffff",
