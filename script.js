@@ -43,19 +43,49 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // ここで OpenCV.js を使用して QR コードを検出・デコードする処理を実装
-        // 実装例：
-        // let src = cv.imread('canvas');
-        // let results = readRgbQrCode(src);
-        // src.delete();
+        let src = cv.imread('canvas');
+        let results = readRgbQrCode(src);
+        src.delete();
         
-        // if (results && results.length > 0) {
-        //     resultText.textContent = "Decoded data: " + results.join(', ');
-        // } else {
-        //     resultText.textContent = "Scanning for QR codes...";
-        // }
+        if (results) {
+            resultText.textContent = "Decoded data: " + results;
+            stopCamera(); // QRコードが検出されたらカメラを停止
+        } else {
+            resultText.textContent = "Scanning for QR codes...";
+            requestAnimationFrame(processFrame);
+        }
+    }
 
-        requestAnimationFrame(processFrame);
+    function readRgbQrCode(src) {
+        let channels = new cv.MatVector();
+        cv.split(src, channels);
+        
+        let qrCodeDetector = new cv.QRCodeDetector();
+        let decodedResults = [];
+
+        for (let i = 0; i < 3; i++) {
+            let points = new cv.Mat();
+            let result = qrCodeDetector.detect(channels.get(i), points);
+            
+            if (result) {
+                let decodedInfo = new cv.Mat();
+                let straightQrCode = new cv.Mat();
+                let data = qrCodeDetector.decode(channels.get(i), points, straightQrCode);
+                if (data) {
+                    decodedResults.push(data.replace(/\\+$/, '')); // 末尾の \\ をトリム
+                }
+                decodedInfo.delete();
+                straightQrCode.delete();
+            }
+            points.delete();
+        }
+
+        channels.delete();
+
+        if (decodedResults.length === 3) {
+            return decodedResults.join('');
+        }
+        return null;
     }
 
     startButton.addEventListener('click', startCamera);
