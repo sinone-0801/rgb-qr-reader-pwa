@@ -16,7 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     startButton.style.display = 'none';
                     stopButton.style.display = 'inline-block';
                     resultText.textContent = 'Camera started. Scanning for QR codes...';
-                    processFrame();
+                    video.addEventListener('loadedmetadata', () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        processFrame();
+                    });
                 })
                 .catch(error => {
                     console.error('Error accessing the camera:', error);
@@ -39,19 +43,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function processFrame() {
         if (video.paused || video.ended) return;
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+            requestAnimationFrame(processFrame);
+            return;
+        }
+        
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        let src = cv.imread('canvas');
-        let results = readRgbQrCode(src);
-        src.delete();
-        
-        if (results) {
-            resultText.textContent = "Decoded data: " + results;
-            stopCamera(); // QRコードが検出されたらカメラを停止
-        } else {
-            resultText.textContent = "Scanning for QR codes...";
+        try {
+            let src = cv.imread('canvas');
+            let results = readRgbQrCode(src);
+            src.delete();
+            
+            if (results) {
+                resultText.textContent = "Decoded data: " + results;
+                stopCamera(); // QRコードが検出されたらカメラを停止
+            } else {
+                resultText.textContent = "Scanning for QR codes...";
+                requestAnimationFrame(processFrame);
+            }
+        } catch (error) {
+            console.error('Error processing frame:', error);
             requestAnimationFrame(processFrame);
         }
     }
