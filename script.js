@@ -1,6 +1,14 @@
 // アプリケーションのバージョンをコンソールに出力
 console.log(`RGB QR Code Reader version ${APP_VERSION}`);
 
+let isOpenCvReady = false;
+
+function onOpenCvReady() {
+    console.log('OpenCV.js is ready');
+    isOpenCvReady = true;
+    document.getElementById('startCamera').disabled = false;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -10,7 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopButton = document.getElementById('stopCamera');
     let stream;
 
+    // Canvas2Dのパフォーマンス警告に対処
+    canvas.getContext('2d', { willReadFrequently: true });
+
     function startCamera() {
+        if (!isOpenCvReady) {
+            cameraStateText.textContent = 'OpenCV.js is not ready yet. Please wait.';
+            return;
+        }
+
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                 .then(str => {
@@ -70,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (results) {
                 resultText.textContent = "Decoded data: " + results;
+                cameraStateText.textContent = "QR code detected. Camera stopped.";
                 stopCamera(); // QRコードが検出されたらカメラを停止
             } else {
                 cameraStateText.textContent = "Scanning for QR codes...";
@@ -117,8 +134,3 @@ document.addEventListener('DOMContentLoaded', () => {
     startButton.addEventListener('click', startCamera);
     stopButton.addEventListener('click', stopCamera);
 });
-
-function onOpenCvReady() {
-    console.log('OpenCV.js is ready');
-    document.getElementById('startCamera').disabled = false;
-}
