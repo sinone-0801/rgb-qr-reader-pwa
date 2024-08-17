@@ -18,16 +18,16 @@
         }
     </script>
     <script async src="opencv.js" onload="onOpenCvReady()"></script>
-    <script src="script.js"></script>
 </head>
 <body>
     <h2>RGB QR Code Reader</h2>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
-    <p id="camera-state">Loading OpenCV.js, please wait...</p>
+    <p id="camera-state">Tap 'Start Camera' to begin</p>
     <p id="result"></p>
-    <button id="startCamera" disabled>Start Camera</button>
+    <button id="startCamera">Start Camera</button>
     <button id="stopCamera" style="display:none;">Stop Camera</button>
+    <script src="script.js"></script>
     <footer>
         <p>Version: <span id="version"></span></p>
     </footer>
