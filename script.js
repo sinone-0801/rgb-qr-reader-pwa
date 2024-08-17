@@ -1,6 +1,3 @@
-// アプリケーションのバージョンをログに出力
-logMessage(`RGB QR Code Reader version ${APP_VERSION}`);
-
 document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -11,13 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const logsElement = document.getElementById('logs');
     let stream;
 
-    // OpenCVのロード状態をチェック
-    if (typeof cv !== 'undefined') {
-        logMessage('OpenCV.js is loaded');
-    } else {
-        logMessage('OpenCV.js is not loaded');
-    }
-
     function logMessage(message) {
         console.log(message);
         const logEntry = document.createElement('div');
@@ -25,6 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
         logsElement.appendChild(logEntry);
         logsElement.scrollTop = logsElement.scrollHeight;
     }
+
+    // OpenCVのロード状態をチェック
+    if (typeof cv !== 'undefined') {
+        logMessage('OpenCV.js is loaded');
+    } else {
+        logMessage('OpenCV.js is not loaded');
+    }
+
+    // アプリケーションのバージョンをログに出力
+    logMessage(`RGB QR Code Reader version ${APP_VERSION}`);
 
     function startCamera() {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
