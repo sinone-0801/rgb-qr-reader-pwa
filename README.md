@@ -8,9 +8,15 @@ This is a Progressive Web App (PWA) that reads RGB QR codes using a device's cam
 - Works offline
 - Can be installed on mobile devices
 
-## How to Use
+## How to Use GENERATOR
 
-1. Open the app in a web browser (https://sinone-0801.github.io/rgb-qr-reader-pwa/)
+1. Open the app in a web browser (https://sinone-0801.github.io/rgb-qr-reader-pwa/generage-rgb-qr.html)
+2. Enter text to input box
+3. Push "Generate RGB QR Code" button
+
+## How to Use READER
+
+1. Open the app in a web browser (https://sinone-0801.github.io/rgb-qr-reader-pwa/index.html)
 2. Click "Start Camera" to begin scanning
 3. Point your camera at an RGB QR code
 4. The decoded information will be displayed on the screen
