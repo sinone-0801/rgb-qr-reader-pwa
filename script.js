@@ -5,26 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultText = document.getElementById('result');
     const startButton = document.getElementById('startCamera');
     const stopButton = document.getElementById('stopCamera');
-    const logsElement = document.getElementById('logs');
+    const rOk = document.getElementById('r_ok');
+    const gOk = document.getElementById('g_ok');
+    const bOk = document.getElementById('b_ok');
     let stream;
-
-    function logMessage(message) {
-        console.log(message);
-        const logEntry = document.createElement('div');
-        logEntry.textContent = message;
-        logsElement.appendChild(logEntry);
-        logsElement.scrollTop = logsElement.scrollHeight;
-    }
-
-    // OpenCVのロード状態をチェック
-    if (typeof cv !== 'undefined') {
-        logMessage('OpenCV.js is loaded');
-    } else {
-        logMessage('OpenCV.js is not loaded');
-    }
-
-    // アプリケーションのバージョンをログに出力
-    logMessage(`RGB QR Code Reader version ${APP_VERSION}`);
 
     function startCamera() {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -47,17 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     video.onplay = () => {
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
-                        logMessage(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
                         processFrame();
                     };
                 };
             })
             .catch(error => {
-                logMessage(`Error accessing the camera: ${error.message}`);
                 cameraStateText.textContent = `Error: ${error.message}`;
             });
         } else {
-            logMessage('getUserMedia is not supported in this browser');
             cameraStateText.textContent = 'getUserMedia is not supported in this browser';
         }
     }
@@ -69,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startButton.style.display = 'inline-block';
             stopButton.style.display = 'none';
             cameraStateText.textContent = 'Camera stopped';
-            logMessage('Camera stopped');
+            clearChannelStatus();
         }
     }
 
@@ -95,14 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (results) {
                 resultText.textContent = "Decoded data: " + results;
                 cameraStateText.textContent = "QR code detected. Camera stopped.";
-                logMessage(`QR code detected: ${results}`);
                 stopCamera();
             } else {
                 cameraStateText.textContent = "Scanning for QR codes...";
                 requestAnimationFrame(processFrame);
             }
         } catch (error) {
-            logMessage(`Error processing frame: ${error.message}`);
             cameraStateText.textContent = "Error processing frame. Retrying...";
             requestAnimationFrame(processFrame);
         }
@@ -115,6 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let qrCodeDetector = new cv.QRCodeDetector();
         let decodedResults = [];
 
+        clearChannelStatus();
+
         for (let i = 0; i < 3; i++) {
             let points = new cv.Mat();
             let result = qrCodeDetector.detect(channels.get(i), points);
@@ -124,13 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 let straightQrCode = new cv.Mat();
                 let data = qrCodeDetector.decode(channels.get(i), points, straightQrCode);
                 if (data) {
-                    decodedResults.push(data.replace(/\\+$/, '')); // 末尾の \\ をトリム
-                    logMessage(`Channel ${i} decoded: ${data}`);
+                    decodedResults.push(data.replace(/\\+$/, ''));
+                    updateChannelStatus(i, true);
                 }
                 decodedInfo.delete();
                 straightQrCode.delete();
             } else {
-                logMessage(`No QR code detected in channel ${i}`);
+                updateChannelStatus(i, false);
             }
             points.delete();
         }
@@ -141,6 +122,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return decodedResults.join('');
         }
         return null;
+    }
+
+    function updateChannelStatus(channel, success) {
+        const element = channel === 0 ? rOk : channel === 1 ? gOk : bOk;
+        element.textContent = success ? '●' : '○';
+    }
+
+    function clearChannelStatus() {
+        rOk.textContent = '○';
+        gOk.textContent = '○';
+        bOk.textContent = '○';
     }
 
     startButton.addEventListener('click', startCamera);
