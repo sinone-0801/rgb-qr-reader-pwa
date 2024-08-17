@@ -16,7 +16,7 @@
             document.getElementById('camera-state').textContent = 'OpenCV.js is ready. You can start the camera now.';
         }
     </script>
-    <script src="opencv.js" async></script>
+    <script async src="opencv.js" onload="onOpenCvReady()"></script>
     <script src="script.js"></script>
 </head>
 <body>
