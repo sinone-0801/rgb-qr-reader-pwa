@@ -10,13 +10,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const bOk = document.getElementById('b_ok');
     let stream;
 
+    // OpenCVの読み込みを待つ
+    function onOpenCvReady() {
+        console.log('OpenCV.js is ready');
+        startButton.style.display = 'inline-block';
+    }
+
+    // グローバルスコープにonOpenCvReady関数を追加
+    window.onOpenCvReady = onOpenCvReady;
+
+    // 初期状態でStartCameraボタンを非表示にする
+    startButton.style.display = 'none';
+
     function startCamera() {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: 'environment',
-                    width: { ideal: 512 },
-                    height: { ideal: 512 }
+                    width: { ideal: 720 },
+                    height: { ideal: 720 }
                 } 
             })
             .then(str => {

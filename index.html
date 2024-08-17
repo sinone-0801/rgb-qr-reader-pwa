@@ -10,23 +10,17 @@
     <script>
         // アプリケーションのバージョン
         const APP_VERSION = "1.0.1";
-        
-        function onOpenCvReady() {
-            console.log('OpenCV.js is ready');
-            document.getElementById('startCamera').disabled = false;
-            document.getElementById('camera-state').textContent = 'OpenCV.js is ready. You can start the camera now.';
-        }
     </script>
-    <script async src="opencv.js" onload="onOpenCvReady()"></script>
+    <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
 </head>
 <body>
     <h2>RGB QR Code Reader</h2>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <p id="camera-state">Tap 'Start Camera' to begin</p>
-    <a id="r_ok" style="color:red">○</a><a id="g_ok" style="color:green">○</a><a id="b_ok" style="color:blue">○</a>
+    <a id="r_ok" style="color:red;">○</a><a id="g_ok" style="color:green;">○</a><a id="b_ok" style="color:blue;">○</a>
     <p id="result"></p>
-    <button id="startCamera">Start Camera</button>
+    <button id="startCamera" style="display:none;">Start Camera</button>
     <button id="stopCamera" style="display:none;">Stop Camera</button>
     <script src="script.js"></script>
     <footer>
