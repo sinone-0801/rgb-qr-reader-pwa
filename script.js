@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
             startButton.style.display = 'inline-block';
             stopButton.style.display = 'none';
             cameraStateText.textContent = 'Camera stopped';
-            resultText.textContent = '';
         }
     }
 
@@ -70,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (results) {
                 resultText.textContent = "Decoded data: " + results;
+                cameraStateText.textContent = "QR code detected. Camera stopped.";
                 stopCamera(); // QRコードが検出されたらカメラを停止
             } else {
                 cameraStateText.textContent = "Scanning for QR codes...";
