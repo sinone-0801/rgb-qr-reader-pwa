@@ -74,7 +74,9 @@
 
         function createColoredQR(data, color) {
             const qr = qrcode(0, 'M');
-            qr.addData(Array.from(data), 'Byte');
+            // データを正しく文字列に変換
+            const dataString = new TextDecoder().decode(data);
+            qr.addData(dataString, 'Byte');
             qr.make();
             const modCount = qr.getModuleCount();
             const canvas = document.createElement('canvas');
@@ -92,6 +94,7 @@
             }
             return ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
+
 
         function combineQRCodes(cyanQR, magentaQR, yellowQR) {
             const canvas = document.createElement('canvas');
