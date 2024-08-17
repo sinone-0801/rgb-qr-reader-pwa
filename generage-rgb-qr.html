@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed RGB QR Code Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        canvas {
+            border: 1px solid black;
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fixed RGB QR Code Generator</h1>
+    <textarea id="input" rows="10" cols="50" placeholder="Enter your text here...">走れメロス！メロスは激怒した！</textarea>
+    <br>
+    <button onclick="generateRGBQRCode()">Generate RGB QR Code</button>
+    <br>
+    <canvas id="qrCanvas"></canvas>
+
+    <script>
+        const SCALE_FACTOR = 8;
+
+        function getOptimalChunkSize(data) {
+            const totalBytes = new TextEncoder().encode(data).length;
+            const baseChunkSize = Math.ceil(totalBytes / 3);
+            
+            const versionSizes = [
+                17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458, 520, 586, 644, 718, 792, 858,
+                929, 1003, 1091, 1171, 1273, 1367, 1465, 1528, 1628, 1732, 1840, 1952, 2068, 2188, 2303, 2431, 2563, 2699, 2809, 2953
+            ];
+            
+            let optimalSize = baseChunkSize;
+            for (let size of versionSizes) {
+                if (size >= baseChunkSize) {
+                    optimalSize = size;
+                    break;
+                }
+            }
+            
+            return optimalSize;
+        }
+
+        function splitData(data) {
+            const optimalChunkSize = getOptimalChunkSize(data);
+            const encoder = new TextEncoder();
+            const dataBytes = encoder.encode(data);
+            
+            let rData = dataBytes.slice(0, optimalChunkSize);
+            let gData = dataBytes.slice(optimalChunkSize, 2 * optimalChunkSize);
+            let bData = dataBytes.slice(2 * optimalChunkSize);
+
+            rData = padArray(rData, optimalChunkSize);
+            gData = padArray(gData, optimalChunkSize);
+            bData = padArray(bData, optimalChunkSize);
+
+            return [rData, gData, bData];
+        }
+
+        function padArray(arr, size) {
+            if (arr.length < size) {
+                const padding = new Uint8Array(size - arr.length);
+                return new Uint8Array([...arr, ...padding]);
+            }
+            return arr;
+        }
+
+        function createColoredQR(data, color) {
+            const qr = qrcode(0, 'M');
+            qr.addData(new TextDecoder().decode(data), 'Byte');
+            qr.make();
+            const modCount = qr.getModuleCount();
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = modCount * SCALE_FACTOR;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for (let row = 0; row < modCount; row++) {
+                for (let col = 0; col < modCount; col++) {
+                    if (qr.isDark(row, col)) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(col * SCALE_FACTOR, row * SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+                    }
+                }
+            }
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        function combineQRCodes(cyanQR, magentaQR, yellowQR) {
+            const canvas = document.createElement('canvas');
+            canvas.width = cyanQR.width;
+            canvas.height = cyanQR.height;
+            const ctx = canvas.getContext('2d');
+            const combinedImageData = ctx.createImageData(canvas.width, canvas.height);
+
+            for (let i = 0; i < combinedImageData.data.length; i += 4) {
+                const cyan = cyanQR.data[i] < 128;
+                const magenta = magentaQR.data[i+1] < 128;
+                const yellow = yellowQR.data[i+2] < 128;
+
+                combinedImageData.data[i] = cyan ? 0 : 255;     // R
+                combinedImageData.data[i+1] = magenta ? 0 : 255; // G
+                combinedImageData.data[i+2] = yellow ? 0 : 255;  // B
+                combinedImageData.data[i+3] = 255; // Alpha
+            }
+
+            return combinedImageData;
+        }
+
+        function generateRGBQRCode() {
+            const input = document.getElementById('input').value;
+            const [cyanData, magentaData, yellowData] = splitData(input);
+
+            const cyanQR = createColoredQR(cyanData, 'cyan');
+            const magentaQR = createColoredQR(magentaData, 'magenta');
+            const yellowQR = createColoredQR(yellowData, 'yellow');
+
+            const combinedQR = combineQRCodes(cyanQR, magentaQR, yellowQR);
+
+            const canvas = document.getElementById('qrCanvas');
+            canvas.width = combinedQR.width;
+            canvas.height = combinedQR.height;
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(combinedQR, 0, 0);
+
+            console.log("QR Code size:", canvas.width, "x", canvas.height);
+            console.log("Data lengths:", cyanData.length, magentaData.length, yellowData.length);
+        }
+
+        window.onload = generateRGBQRCode;
+    </script>
+</body>
+</html>

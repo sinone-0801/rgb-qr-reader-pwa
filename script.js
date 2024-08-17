@@ -105,9 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let qrCodeDetector = new cv.QRCodeDetector();
         let decodedResults = [];
-
+    
         clearChannelStatus();
-
+    
         for (let i = 0; i < 3; i++) {
             let points = new cv.Mat();
             let result = qrCodeDetector.detect(channels.get(i), points);
@@ -117,7 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 let straightQrCode = new cv.Mat();
                 let data = qrCodeDetector.decode(channels.get(i), points, straightQrCode);
                 if (data) {
-                    decodedResults.push(data.replace(/\\+$/, ''));
+                    // ここでデコードされたデータをUTF-8として解釈
+                    let decodedText = new TextDecoder('utf-8').decode(new Uint8Array(data.split('').map(c => c.charCodeAt(0))));
+                    decodedResults.push(decodedText.replace(/\\+$/, ''));
                     updateChannelStatus(i, true);
                 }
                 decodedInfo.delete();
@@ -127,9 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             points.delete();
         }
-
+    
         channels.delete();
-
+    
         if (decodedResults.length === 3) {
             return decodedResults.join('');
         }
