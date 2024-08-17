@@ -4,8 +4,8 @@ const urlsToCache = [
   '/rgb-qr-reader-pwa/index.html',
   '/rgb-qr-reader-pwa/style.css',
   '/rgb-qr-reader-pwa/script.js',
-  '/rgb-qr-reader-pwa/manifest.json',
-  'https://docs.opencv.org/4.x/opencv.js'
+  '/rgb-qr-reader-pwa/opencv.js',  // ローカルの OpenCV.js
+  '/rgb-qr-reader-pwa/manifest.json'
 ];
 
 self.addEventListener('install', function(event) {
