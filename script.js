@@ -1,122 +1,107 @@
 // アプリケーションのバージョンをコンソールに出力
 console.log(`RGB QR Code Reader version ${APP_VERSION}`);
 
-document.addEventListener('DOMContentLoaded', () => {
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const cameraStateText = document.getElementById('camera-state');
-    const resultText = document.getElementById('result');
-    const startButton = document.getElementById('startCamera');
-    const stopButton = document.getElementById('stopCamera');
-    let stream;
+// グローバル変数
+let video, canvas, ctx, cameraStateText, resultText;
+let currentChannel = 'R';
+let channelData = { R: null, G: null, B: null };
+let lastReadTime = 0;
+const TIMEOUT = 1000; // 1秒のタイムアウト
 
-    // Canvas2Dのパフォーマンス警告に対処
-    canvas.getContext('2d', { willReadFrequently: true });
+function initializeCamera() {
+    video = document.getElementById('video');
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
+    cameraStateText = document.getElementById('camera-state');
+    resultText = document.getElementById('result');
 
-    function startCamera() {
-        if (typeof cv === 'undefined') {
-            cameraStateText.textContent = 'OpenCV.js is not ready yet. Please wait.';
-            return;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+            video.srcObject = stream;
+            video.play();
+            processFrame();
+        })
+        .catch(error => {
+            console.error('Error accessing the camera:', error);
+            cameraStateText.textContent = `Error: ${error.message}`;
+        });
+}
+
+function processFrame() {
+    if (video.paused || video.ended) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = decodeQRCode(imageData, currentChannel);
+
+    if (code) {
+        const currentTime = Date.now();
+        if (currentTime - lastReadTime > TIMEOUT) {
+            // タイムアウトしたらリセット
+            channelData = { R: null, G: null, B: null };
+            currentChannel = 'R';
         }
 
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(str => {
-                    stream = str;
-                    video.srcObject = stream;
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        startButton.style.display = 'none';
-                        stopButton.style.display = 'inline-block';
-                        cameraStateText.textContent = 'Camera started. Scanning for QR codes...';
-                        resultText.textContent = '';
-                        video.onplay = () => {
-                            canvas.width = video.videoWidth;
-                            canvas.height = video.videoHeight;
-                            processFrame();
-                        };
-                    };
-                })
-                .catch(error => {
-                    console.error('Error accessing the camera:', error);
-                    cameraStateText.textContent = `Error: ${error.message}`;
-                });
-        } else {
-            cameraStateText.textContent = 'getUserMedia is not supported in this browser';
+        channelData[currentChannel] = code;
+        lastReadTime = currentTime;
+
+        if (currentChannel === 'R') {
+            currentChannel = 'G';
+        } else if (currentChannel === 'G') {
+            currentChannel = 'B';
+        } else if (currentChannel === 'B') {
+            // 全チャンネル読み取り完了
+            const fullCode = channelData.R + channelData.G + channelData.B;
+            resultText.textContent = `Decoded: ${fullCode}`;
+            return; // 読み取り完了
         }
+
+        cameraStateText.textContent = `Read ${currentChannel} channel. Waiting for next...`;
+    } else {
+        cameraStateText.textContent = `Scanning ${currentChannel} channel...`;
     }
 
-    function stopCamera() {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
-            startButton.style.display = 'inline-block';
-            stopButton.style.display = 'none';
-            cameraStateText.textContent = 'Camera stopped';
-            resultText.textContent = '';
+    requestAnimationFrame(processFrame);
+}
+
+function decodeQRCode(imageData, channel) {
+    // チャンネルに応じてイメージデータをフィルタリング
+    const filteredData = new Uint8ClampedArray(imageData.data.length);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+        if (channel === 'R') {
+            filteredData[i] = imageData.data[i];
+            filteredData[i + 1] = filteredData[i + 2] = 0;
+        } else if (channel === 'G') {
+            filteredData[i + 1] = imageData.data[i + 1];
+            filteredData[i] = filteredData[i + 2] = 0;
+        } else if (channel === 'B') {
+            filteredData[i + 2] = imageData.data[i + 2];
+            filteredData[i] = filteredData[i + 1] = 0;
         }
+        filteredData[i + 3] = 255; // アルファチャンネル
     }
 
-    function processFrame() {
-        if (video.paused || video.ended) return;
-        
-        if (video.videoWidth === 0 || video.videoHeight === 0) {
-            requestAnimationFrame(processFrame);
-            return;
-        }
+    const filteredImageData = new ImageData(filteredData, imageData.width, imageData.height);
     
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+    // OpenCV.jsを使用してQRコードをデコード
+    let src = cv.matFromImageData(filteredImageData);
+    let dst = new cv.Mat();
+    cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
     
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    let qrCodeDetector = new cv.QRCodeDetector();
+    let decoded = qrCodeDetector.detectAndDecode(dst);
     
-        try {
-            let src = cv.imread(canvas);
-            let results = readRgbQrCode(src);
-            src.delete();
-            
-            if (results) {
-                resultText.textContent = "Decoded data: " + results;
-                cameraStateText.textContent = "QR code detected. Camera stopped.";
-                stopCamera(); // QRコードが検出されたらカメラを停止
-            } else {
-                cameraStateText.textContent = "Scanning for QR codes...";
-                requestAnimationFrame(processFrame);
-            }
-        } catch (error) {
-            console.error('Error processing frame:', error);
-            cameraStateText.textContent = "Error processing frame. Retrying...";
-            requestAnimationFrame(processFrame);
-        }
-    }
-    
-    function readRgbQrCode(src) {
-        let gray = new cv.Mat();
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    
-        let qrCodeDetector = new cv.QRCodeDetector();
-        let decodedInfo = new cv.Mat();
-        let points = new cv.Mat();
-        
-        let result = qrCodeDetector.detectAndDecode(gray, decodedInfo, points);
-        
-        gray.delete();
-        points.delete();
-        
-        if (result) {
-            let data = decodedInfo.data[0];
-            decodedInfo.delete();
-            return data;
-        }
-        
-        decodedInfo.delete();
-        return null;
-    }
-    
-    startButton.addEventListener('click', startCamera);
-    stopButton.addEventListener('click', stopCamera);
-});
+    src.delete();
+    dst.delete();
+
+    return decoded.decodedText || null;
+}
+
+// カメラ起動ボタンのイベントリスナー
+document.getElementById('startCamera').addEventListener('click', initializeCamera);
 
 // サービスワーカーの登録
 if ('serviceWorker' in navigator) {
