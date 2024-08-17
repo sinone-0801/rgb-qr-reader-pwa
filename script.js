@@ -117,9 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 let straightQrCode = new cv.Mat();
                 let data = qrCodeDetector.decode(channels.get(i), points, straightQrCode);
                 if (data) {
-                    // ここでデコードされたデータをUTF-8として解釈
-                    let decodedText = new TextDecoder('utf-8').decode(new Uint8Array(data.split('').map(c => c.charCodeAt(0))));
-                    decodedResults.push(decodedText.replace(/\\+$/, ''));
+                    // バイナリデータとして処理
+                    let binaryData = new Uint8Array(data.split('').map(c => c.charCodeAt(0)));
+                    decodedResults.push(binaryData);
                     updateChannelStatus(i, true);
                 }
                 decodedInfo.delete();
@@ -133,7 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
         channels.delete();
     
         if (decodedResults.length === 3) {
-            return decodedResults.join('');
+            // 3つのチャンネルのデータを結合
+            const combinedData = new Uint8Array([...decodedResults[0], ...decodedResults[1], ...decodedResults[2]]);
+            // パディングを除去（0バイトを末尾から削除）
+            const trimmedData = combinedData.slice(0, combinedData.findIndex(byte => byte === 0) !== -1 ? combinedData.findIndex(byte => byte === 0) : undefined);
+            // UTF-8としてデコード
+            return new TextDecoder('utf-8').decode(trimmedData);
         }
         return null;
     }

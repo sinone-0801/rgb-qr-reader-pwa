@@ -46,32 +46,35 @@
         }
 
         function splitData(data) {
-            const optimalChunkSize = getOptimalChunkSize(data);
             const encoder = new TextEncoder();
             const dataBytes = encoder.encode(data);
+            const totalBytes = dataBytes.length;
             
-            let rData = dataBytes.slice(0, optimalChunkSize);
-            let gData = dataBytes.slice(optimalChunkSize, 2 * optimalChunkSize);
-            let bData = dataBytes.slice(2 * optimalChunkSize);
+            const chunkSize = Math.ceil(totalBytes / 3);
+            
+            let rData = dataBytes.slice(0, chunkSize);
+            let gData = dataBytes.slice(chunkSize, 2 * chunkSize);
+            let bData = dataBytes.slice(2 * chunkSize);
 
-            rData = padArray(rData, optimalChunkSize);
-            gData = padArray(gData, optimalChunkSize);
-            bData = padArray(bData, optimalChunkSize);
+            // Ensure each chunk is a multiple of 3 bytes
+            rData = padArrayToMultipleOf3(rData);
+            gData = padArrayToMultipleOf3(gData);
+            bData = padArrayToMultipleOf3(bData);
 
             return [rData, gData, bData];
         }
 
-        function padArray(arr, size) {
-            if (arr.length < size) {
-                const padding = new Uint8Array(size - arr.length);
-                return new Uint8Array([...arr, ...padding]);
-            }
-            return arr;
+        function padArrayToMultipleOf3(arr) {
+            const remainder = arr.length % 3;
+            if (remainder === 0) return arr;
+            
+            const padding = new Uint8Array(3 - remainder);
+            return new Uint8Array([...arr, ...padding]);
         }
 
         function createColoredQR(data, color) {
             const qr = qrcode(0, 'M');
-            qr.addData(new TextDecoder().decode(data), 'Byte');
+            qr.addData(Array.from(data), 'Byte');
             qr.make();
             const modCount = qr.getModuleCount();
             const canvas = document.createElement('canvas');
