@@ -19,8 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
             .then(stream => {
                 video.srcObject = stream;
-                video.play();
-                processFrame();
+                video.onloadedmetadata = () => {
+                    video.play();
+                    // video要素のサイズが設定された後にcanvasのサイズを設定
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    processFrame();
+                };
             })
             .catch(error => {
                 console.error('Error accessing the camera:', error);
@@ -31,38 +36,53 @@ document.addEventListener('DOMContentLoaded', () => {
     function processFrame() {
         if (video.paused || video.ended) return;
     
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        // video要素のサイズが有効かチェック
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+            requestAnimationFrame(processFrame);
+            return;
+        }
+    
+        // canvasのサイズをvideo要素に合わせて更新
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        }
+    
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = decodeQRCode(imageData, currentChannel);
+        try {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = decodeQRCode(imageData, currentChannel);
     
-        if (code) {
-            const currentTime = Date.now();
-            if (currentTime - lastReadTime > TIMEOUT) {
-                // タイムアウトしたらリセット
-                channelData = { R: null, G: null, B: null };
-                currentChannel = 'R';
+            if (code) {
+                const currentTime = Date.now();
+                if (currentTime - lastReadTime > TIMEOUT) {
+                    // タイムアウトしたらリセット
+                    channelData = { R: null, G: null, B: null };
+                    currentChannel = 'R';
+                }
+    
+                channelData[currentChannel] = code;
+                lastReadTime = currentTime;
+    
+                if (currentChannel === 'R') {
+                    currentChannel = 'G';
+                } else if (currentChannel === 'G') {
+                    currentChannel = 'B';
+                } else if (currentChannel === 'B') {
+                    // 全チャンネル読み取り完了
+                    const fullCode = channelData.R + channelData.G + channelData.B;
+                    resultText.textContent = `Decoded: ${fullCode}`;
+                    return; // 読み取り完了
+                }
+    
+                cameraStateText.textContent = `Read ${currentChannel} channel. Waiting for next...`;
+            } else {
+                cameraStateText.textContent = `Scanning ${currentChannel} channel...`;
             }
-    
-            channelData[currentChannel] = code;
-            lastReadTime = currentTime;
-    
-            if (currentChannel === 'R') {
-                currentChannel = 'G';
-            } else if (currentChannel === 'G') {
-                currentChannel = 'B';
-            } else if (currentChannel === 'B') {
-                // 全チャンネル読み取り完了
-                const fullCode = channelData.R + channelData.G + channelData.B;
-                resultText.textContent = `Decoded: ${fullCode}`;
-                return; // 読み取り完了
-            }
-    
-            cameraStateText.textContent = `Read ${currentChannel} channel. Waiting for next...`;
-        } else {
-            cameraStateText.textContent = `Scanning ${currentChannel} channel...`;
+        } catch (error) {
+            console.error('Error processing frame:', error);
+            cameraStateText.textContent = 'Error processing frame. Retrying...';
         }
     
         requestAnimationFrame(processFrame);
